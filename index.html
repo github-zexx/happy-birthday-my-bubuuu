@@ -45,41 +45,48 @@ nav.hide{display:none}
 /* letter */
 .env{font-size:6rem;cursor:pointer;animation:bob 2s infinite}
 .letter{background:var(--card);border:2px dashed var(--soft);border-radius:22px;padding:22px;max-width:380px;text-align:left;font-size:1.02rem;line-height:1.7;min-height:200px;max-height:60vh;overflow-y:auto;white-space:pre-wrap}
-.letter{
- scrollbar-width:thin;
- scrollbar-color:var(--pink) rgba(255,255,255,.12);
- scrollbar-gutter:stable;
+/* Dedicated custom scrollbar: visible pink track + draggable thumb */
+.letter-frame{
+ display:flex;align-items:stretch;gap:8px;
+ width:min(380px,92vw);max-height:60vh;min-height:200px;
+ background:var(--card);border:2px dashed var(--soft);
+ border-radius:22px;padding:14px 10px 14px 18px;
+ overflow:hidden;text-align:left;
 }
-.letter::-webkit-scrollbar{width:10px}
-.letter::-webkit-scrollbar-track{
- background:rgba(255,255,255,.12);
+.letter-frame .letter{
+ flex:1;min-width:0;max-height:calc(60vh - 32px);min-height:160px;
+ padding:4px 8px 4px 0;border:0;border-radius:0;background:transparent;
+ overflow-y:auto;white-space:normal;line-height:1.75;
+ scrollbar-width:none;-ms-overflow-style:none;
+}
+.letter-frame .letter::-webkit-scrollbar{display:none;width:0;height:0}
+.letter-scroll-track{
+ flex:0 0 10px;width:10px;position:relative;
+ border-radius:999px;background:rgba(255,111,165,.18);
+ border:1px solid rgba(255,179,209,.65);margin:2px 1px;
+}
+.letter-scroll-thumb{
+ position:absolute;left:0;top:0;width:100%;min-height:34px;
  border-radius:999px;
- margin:10px 3px;
+ background:linear-gradient(180deg,#ff8fba 0%,#ff4f96 100%);
+ box-shadow:0 0 9px rgba(255,111,165,.45);
+ cursor:grab;touch-action:none;
 }
-.letter::-webkit-scrollbar-thumb{
- background:linear-gradient(180deg,var(--pink),var(--soft));
- border:2px solid transparent;
- background-clip:padding-box;
- border-radius:999px;
+.letter-scroll-thumb:active{cursor:grabbing;background:linear-gradient(180deg,#ffd27a,#ff6fa5)}
+.letter h1,.letter h2,.letter h3,.letter h4{
+ color:var(--pink);font-family:'Pacifico',cursive;font-weight:400;
+ line-height:1.3;margin:.65em 0 .35em;
 }
-.letter::-webkit-scrollbar-thumb:hover{
- background:var(--gold);
- border:2px solid transparent;
- background-clip:padding-box;
-}
-.letter h1,.letter h2,.letter h3{
- color:var(--pink);margin:.7em 0 .35em;line-height:1.3;
-}
+.letter h1{font-size:1.65rem}.letter h2{font-size:1.4rem}.letter h3{font-size:1.2rem}
 .letter p{max-width:none;margin:.65em 0}
-.letter strong{color:var(--pink);font-weight:700}
+.letter strong{font-weight:700;color:var(--pink)}
 .letter em{color:var(--gold)}
-.letter ul,.letter ol{padding-left:1.35em;margin:.5em 0}
-.letter li{padding-left:.2em;margin:.25em 0}
-.letter blockquote{
- border-left:3px solid var(--pink);margin:.8em 0;padding:.2em 0 .2em 1em;
- opacity:.9;
-}
+.letter ul,.letter ol{padding-left:1.4em;margin:.5em 0}
+.letter li{margin:.25em 0;padding-left:.15em}
+.letter blockquote{border-left:3px solid var(--pink);padding:.15em 0 .15em 1em;margin:.8em 0;opacity:.92}
 .letter hr{border:0;border-top:1px solid var(--soft);margin:1em 0}
+.letter a{color:var(--pink);text-decoration:underline}
+.letter code{background:rgba(255,111,165,.14);padding:.1em .3em;border-radius:5px}
 
 #star{font-size:5.5rem;background:none;border:0;cursor:pointer;animation:bob 1.8s infinite;filter:drop-shadow(0 0 18px var(--gold))}
 .pol{background:#fff;padding:12px 12px 8px;border-radius:8px;box-shadow:0 12px 30px #0003;transform:rotate(-3deg);width:min(300px,78vw);cursor:pointer;margin:14px 0}.pimg{aspect-ratio:1/1;background:var(--bg1);border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center;color:#a8456f;font-weight:700;font-size:1rem;line-height:1.8}.pimg img{width:100%;height:100%;object-fit:cover}.cap{font-family:'Pacifico',cursive;color:#5a2342;padding:10px 0 4px;font-size:1.1rem}
@@ -130,7 +137,12 @@ canvas{position:fixed;inset:0;z-index:9;pointer-events:none}
  <h2>A little letter</h2>
  <div class="env" id="env">💌</div>
  <p id="eh">Tap the envelope to open</p>
- <div class="letter" id="lt" style="display:none"></div>
+ <div class="letter-frame" id="letterFrame" style="display:none">
+   <div class="letter" id="lt" role="article" aria-label="Love letter"></div>
+   <div class="letter-scroll-track" id="letterTrack" aria-hidden="true">
+    <div class="letter-scroll-thumb" id="letterThumb"></div>
+   </div>
+  </div>
 </section>
 
 <section class="page" id="p4">
@@ -151,8 +163,8 @@ canvas{position:fixed;inset:0;z-index:9;pointer-events:none}
 <script>
 // ✏️ Edit these to make it truly hers:
 const REASONS=["Your smile makes my whole day brighter ☀️","You make even boring moments feel fun 🎈","Your kindness is my favorite thing 🌷","You always know how to cheer me up 🫶","Being with you feels like home 🏡","You’re my favorite person, always 💖"];
-// 📷 These match the names shown in your photos folder.
-// The loader below also tries common extensions (.jpg, .jpeg, .png, .webp, .gif).
+// 📷 Add images to a folder named "photos" beside index.html.
+// Then set src to a relative path, e.g. "photos/first-date.jpg".
 const PHOTOS=[
  {src:"photos/silly-moment.jpg",cap:"Our silly moment 😜"},
  {src:"photos/favourite-smile.jpg",cap:"My favourite smile 🥹"},
@@ -164,28 +176,8 @@ const $=s=>document.querySelector(s);
 let ord=PHOTOS.map((_,i)=>i),love=0,tgt=0;const stack=$('#stack'),cards=[];
 function paint(i){
  const b=cards[i].querySelector('.pimg'),m=PHOTOS[i];
- b.innerHTML='';
- if(m.src){
-  const im=new Image();
-  im.alt='Memory '+(i+1);
-  im.onload=()=>{b.innerHTML='';b.appendChild(im)};
-  im.onerror=()=>{
-   const extensions=['.jpg','.jpeg','.png','.webp','.gif'];
-   const base=m.src;
-   const next=extensions.find(ext=>!im.dataset.tried?.split('|').includes(ext));
-   if(next){
-    im.dataset.tried=(im.dataset.tried||'')+'|'+next;
-    im.src=base+next;
-   }else{
-    console.warn('Could not load photo:',base,'Check its exact name and extension.');
-    b.innerHTML=`<div>🖼️<br>Photo not found<br><small>${base} (+ .jpg/.jpeg/.png/.webp)</small></div>`;
-   }
-  };
-  im.src=m.src;
- }else{
-  b.innerHTML=`<div>📷<br>Memory ${i+1}<br><button class="btn add">Add photo</button></div>`;
-  b.querySelector('.add').onclick=e=>{e.stopPropagation();tgt=i;$('#pin').click()};
- }
+ if(m.src){b.innerHTML='';const im=new Image();im.src=m.src;im.alt='Memory '+(i+1);b.appendChild(im)}
+ else{b.innerHTML=`<div>📷<br>Memory ${i+1}<br><button class="btn add">Add photo</button></div>`;b.querySelector('.add').onclick=e=>{e.stopPropagation();tgt=i;$('#pin').click()}}
 }
 function lay(){
  const R=[-2,4,-5,3];
@@ -216,61 +208,97 @@ $('#nx').onclick=()=>show(cur+1);$('#bk').onclick=()=>show(cur-1);
 
 name='Mrs. Sloth 🦥💖💋';
 $('#hb').textContent='Happy Birthday, '+name+'!';
-// letter.md is the single source of truth. Poll it so edits appear without
-// refreshing the page; if the letter is already open, update it immediately.
-// Small built-in Markdown renderer (no external library required).
-function escapeHTML(value){
- return value.replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-}
-function inlineMarkdown(value){
- let s=escapeHTML(value);
- s=s.replace(/`([^`]+)`/g,'<code>$1</code>');
- s=s.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/__(.+?)__/g,'<strong>$1</strong>');
- s=s.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g,'<em>$1</em>').replace(/_([^_]+)_/g,'<em>$1</em>');
- s=s.replace(/~~(.+?)~~/g,'<del>$1</del>');
- return s;
-}
-function markdownToHTML(markdown){
- const lines=markdown.replace(/\r/g,'').split('\n');
- const blocks=[];let paragraph=[],listType='',listItems=[],quote=[];
- const flushParagraph=()=>{if(paragraph.length){blocks.push('<p>'+paragraph.map(inlineMarkdown).join('<br>')+'</p>');paragraph=[];}};
- const flushList=()=>{if(listItems.length){blocks.push('<'+listType+'>'+listItems.map(x=>'<li>'+inlineMarkdown(x)+'</li>').join('')+'</'+listType+'>');listItems=[];listType='';}};
- const flushQuote=()=>{if(quote.length){blocks.push('<blockquote><p>'+quote.map(inlineMarkdown).join('<br>')+'</p></blockquote>');quote=[];}};
- for(const line of lines){
-  const trimmed=line.trim();
-  if(!trimmed){flushParagraph();flushList();flushQuote();continue;}
-  const heading=trimmed.match(/^(#{1,3})\s+(.+)$/);
-  const bullet=trimmed.match(/^[-*+]\s+(.+)$/);
-  const numbered=trimmed.match(/^\d+[.)]\s+(.+)$/);
-  if(heading){flushParagraph();flushList();flushQuote();const level=heading[1].length;blocks.push('<h'+level+'>'+inlineMarkdown(heading[2])+'</h'+level+'>');}
-  else if(/^---+$/.test(trimmed)){flushParagraph();flushList();flushQuote();blocks.push('<hr>');}
-  else if(bullet||numbered){flushParagraph();flushQuote();const type=bullet?'ul':'ol';if(listType&&listType!==type)flushList();listType=type;listItems.push((bullet||numbered)[1]);}
-  else if(trimmed.startsWith('>')){flushParagraph();flushList();quote.push(trimmed.replace(/^>\s?/,''));}
-  else{flushList();flushQuote();paragraph.push(line);}
- }
- flushParagraph();flushList();flushQuote();
- return blocks.join('');
-}
+// letter.md is the single source of truth.
+// Marked parses real Markdown (including GFM); DOMPurify sanitizes the generated HTML.
 let latestLetter='';
-$('#lt').dataset.t='Loading your letter…';
+let letterIsOpen=false;
+const letterFrame=$('#letterFrame');
+const letterBox=$('#lt');
+const letterTrack=$('#letterTrack');
+const letterThumb=$('#letterThumb');
+
+function escapeMarkdownHTML(text){
+ return text.replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function basicMarkdownFallback(source){
+ // Fallback renderer for headings, paragraphs, emphasis, lists, quotes and rules.
+ const lines=source.replace(/\r/g,'').split('\n');
+ let out=[],para=[],list='',items=[],quote=[];
+ const flushPara=()=>{if(para.length){out.push('<p>'+para.map(x=>escapeMarkdownHTML(x)).join('<br>')+'</p>');para=[];}};
+ const flushList=()=>{if(items.length){out.push('<'+list+'>'+items.map(x=>'<li>'+escapeMarkdownHTML(x)+'</li>').join('')+'</'+list+'>');items=[];list='';}};
+ const flushQuote=()=>{if(quote.length){out.push('<blockquote>'+quote.map(x=>'<p>'+escapeMarkdownHTML(x)+'</p>').join('')+'</blockquote>');quote=[];}};
+ for(const raw of lines){
+  const x=raw.trim();
+  if(!x){flushPara();flushList();flushQuote();continue;}
+  const h=x.match(/^(#{1,6})\s+(.+)$/),ul=x.match(/^[-*+]\s+(.+)$/),ol=x.match(/^\d+[.)]\s+(.+)$/);
+  if(h){flushPara();flushList();flushQuote();const n=h[1].length;out.push('<h'+n+'>'+escapeMarkdownHTML(h[2])+'</h'+n+'>');}
+  else if(/^(-{3,}|\*{3,}|_{3,})$/.test(x)){flushPara();flushList();flushQuote();out.push('<hr>');}
+  else if(ul||ol){flushPara();flushQuote();const kind=ul?'ul':'ol';if(list&&list!==kind)flushList();list=kind;items.push((ul||ol)[1]);}
+  else if(x.startsWith('>')){flushPara();flushList();quote.push(x.replace(/^>\s?/,''));}
+  else{flushList();flushQuote();para.push(raw);}
+ }
+ flushPara();flushList();flushQuote();
+ return out.join('');
+}
+function renderMarkdown(source){
+ if(window.marked && window.DOMPurify){
+  const rendered=window.marked.parse(source,{gfm:true,breaks:false});
+  return window.DOMPurify.sanitize(rendered);
+ }
+ return basicMarkdownFallback(source);
+}
+function updateLetterScrollbar(){
+ const max=letterBox.scrollHeight-letterBox.clientHeight;
+ const trackHeight=letterTrack.clientHeight;
+ if(max<=1){letterTrack.style.visibility='hidden';return;}
+ letterTrack.style.visibility='visible';
+ const thumbHeight=Math.max(34,trackHeight*(letterBox.clientHeight/letterBox.scrollHeight));
+ letterThumb.style.height=thumbHeight+'px';
+ const travel=trackHeight-thumbHeight;
+ letterThumb.style.transform='translateY('+(max?letterBox.scrollTop/max*travel:0)+'px)';
+}
+letterBox.addEventListener('scroll',updateLetterScrollbar);
+if(window.ResizeObserver){
+ new ResizeObserver(updateLetterScrollbar).observe(letterBox);
+}
+let draggingThumb=false,dragStartY=0,dragStartScroll=0;
+letterThumb.addEventListener('pointerdown',e=>{
+ draggingThumb=true;dragStartY=e.clientY;dragStartScroll=letterBox.scrollTop;
+ letterThumb.setPointerCapture(e.pointerId);e.preventDefault();
+});
+letterThumb.addEventListener('pointermove',e=>{
+ if(!draggingThumb)return;
+ const travel=letterTrack.clientHeight-letterThumb.offsetHeight;
+ const max=letterBox.scrollHeight-letterBox.clientHeight;
+ if(travel>0)letterBox.scrollTop=dragStartScroll+(e.clientY-dragStartY)*max/travel;
+});
+letterThumb.addEventListener('pointerup',()=>{draggingThumb=false});
+letterThumb.addEventListener('pointercancel',()=>{draggingThumb=false});
+letterTrack.addEventListener('pointerdown',e=>{
+ if(e.target===letterThumb)return;
+ const rect=letterTrack.getBoundingClientRect();
+ const ratio=Math.max(0,Math.min(1,(e.clientY-rect.top)/rect.height));
+ letterBox.scrollTop=ratio*(letterBox.scrollHeight-letterBox.clientHeight);
+});
+
 async function loadLetter(){
  try{
-  const response=await fetch('letter.md?v='+Date.now(),{cache:'no-store'});
-  if(!response.ok)throw new Error('Could not load letter.md ('+response.status+')');
+  const response=await fetch('./letter.md?updated='+Date.now(),{cache:'no-store'});
+  if(!response.ok)throw new Error('letter.md returned HTTP '+response.status);
   const text=(await response.text()).replace(/\r/g,'').replace('{name}',name).trim();
   if(!text||text===latestLetter)return;
   latestLetter=text;
-  $('#lt').dataset.t=text;
-  if($('#lt').style.display!=='none'){
-   $('#lt').innerHTML=markdownToHTML(text);
-   $('#lt').scrollTop=0;
-  }
+  letterBox.innerHTML=renderMarkdown(text);
+  letterBox.scrollTop=0;
+  requestAnimationFrame(updateLetterScrollbar);
  }catch(error){
-  console.warn('Love letter refresh failed. Make sure letter.md is served beside index.html.',error);
+  console.error('Love letter could not be loaded. Serve index.html and letter.md from the same folder.',error);
+  if(!latestLetter)letterBox.innerHTML='<p>Could not load letter.md. Make sure it is beside index.html and open the site through a local web server.</p>';
  }
 }
 loadLetter();
 setInterval(loadLetter,1500);
+
 $('#gift').onclick=()=>{$('#gift').classList.add('pop');confetti();hearts(14);setTimeout(()=>show(1),650)};
 
 // candles
@@ -293,18 +321,20 @@ REASONS.forEach(r=>{
  d.onclick=()=>d.classList.toggle('f');grid.appendChild(d);
 });
 
-// letter typewriter
-let typing=false;
+// Open the letter as formatted Markdown, not raw Markdown source.
 $('#env').onclick=()=>{
- if(typing)return;typing=true;
- $('#env').style.display='none';$('#eh').style.display='none';
- const L=$('#lt');L.style.display='block';L.textContent='';
- const t=Array.from(L.dataset.t);let i=0;
- const fin=()=>{clearInterval(iv);L.innerHTML=markdownToHTML(L.dataset.t||t.join(''));L.scrollTop=L.scrollHeight;hearts(10)};
- L.onclick=()=>{if(i<t.length){i=t.length;fin()}};
- const iv=setInterval(()=>{L.textContent+=t[i++];L.scrollTop=L.scrollHeight;if(i>=t.length)fin()},9);
+ if(letterIsOpen)return;
+ letterIsOpen=true;
+ $('#env').style.display='none';
+ $('#eh').style.display='none';
+ letterFrame.style.display='flex';
+ if(latestLetter)letterBox.innerHTML=renderMarkdown(latestLetter);
+ requestAnimationFrame(()=>{
+  updateLetterScrollbar();
+  letterBox.scrollTop=0;
+  hearts(10);
+ });
 };
-
 // wish
 $('#star').onclick=()=>{
  $('#star').style.display='none';
