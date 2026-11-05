@@ -3,6 +3,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Happy Birthday 💖</title>
 <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+<!-- Full Markdown support: CommonMark + GitHub Flavoured Markdown -->
+<script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
 <style>
 :root{--bg1:#ffe3ee;--bg2:#ffd1e6;--card:#ffffffcc;--ink:#5a2342;--pink:#ff6fa5;--soft:#ffb3d1;--gold:#ffc85a;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -87,6 +90,38 @@ nav.hide{display:none}
 .letter hr{border:0;border-top:1px solid var(--soft);margin:1em 0}
 .letter a{color:var(--pink);text-decoration:underline}
 .letter code{background:rgba(255,111,165,.14);padding:.1em .3em;border-radius:5px}
+/* Markdown theme: headings, paragraphs, inline styles, code, tables and media */
+.letter h1,.letter h2,.letter h3,.letter h4,.letter h5,.letter h6{
+ font-family:'Pacifico',cursive;color:var(--pink);font-weight:400;
+ line-height:1.3;margin:1em 0 .45em;text-align:left;
+}
+.letter h1{font-size:1.8rem}.letter h2{font-size:1.55rem}
+.letter h3{font-size:1.3rem}.letter h4{font-size:1.15rem}
+.letter h5{font-size:1.05rem}.letter h6{font-size:.98rem;opacity:.85}
+.letter p{max-width:none;margin:.7em 0}
+.letter strong,.letter b{font-weight:700;color:var(--pink)}
+.letter em,.letter i{font-style:italic}
+.letter del,.letter s{opacity:.7}
+.letter mark{background:var(--gold);color:#54213e;padding:0 .2em;border-radius:3px}
+.letter ul,.letter ol{padding-left:1.5em;margin:.65em 0}
+.letter li{margin:.3em 0;padding-left:.15em}
+.letter li>ul,.letter li>ol{margin:.25em 0}
+.letter input[type=checkbox]{width:auto;margin:0 .45em 0 0;accent-color:var(--pink)}
+.letter blockquote{border-left:3px solid var(--pink);padding:.2em 0 .2em 1em;margin:.9em 0;opacity:.92}
+.letter blockquote p{margin:.3em 0}
+.letter hr{border:0;border-top:1px solid var(--soft);margin:1.2em 0}
+.letter a{color:var(--pink);text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
+.letter code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:rgba(255,111,165,.15);padding:.12em .35em;border-radius:5px;font-size:.9em}
+.letter pre{white-space:pre;overflow-x:auto;background:rgba(0,0,0,.16);border:1px solid var(--soft);border-radius:10px;padding:12px;margin:.8em 0}
+.letter pre code{background:none;padding:0;border-radius:0;color:inherit}
+.letter table{display:block;max-width:100%;overflow-x:auto;border-collapse:collapse;margin:.9em 0;font-size:.9em}
+.letter th,.letter td{border:1px solid var(--soft);padding:7px 9px;text-align:left;min-width:70px}
+.letter th{background:rgba(255,111,165,.18);color:var(--pink)}
+.letter img{max-width:100%;height:auto;border-radius:10px;display:block;margin:.7em auto}
+.letter figure{margin:.8em 0}
+.letter sup,.letter sub{line-height:0}
+.letter kbd{border:1px solid var(--soft);border-bottom-width:2px;border-radius:4px;padding:0 .3em;font-size:.85em}
+
 
 #star{font-size:5.5rem;background:none;border:0;cursor:pointer;animation:bob 1.8s infinite;filter:drop-shadow(0 0 18px var(--gold))}
 .pol{background:#fff;padding:12px 12px 8px;border-radius:8px;box-shadow:0 12px 30px #0003;transform:rotate(-3deg);width:min(300px,78vw);cursor:pointer;margin:14px 0}.pimg{aspect-ratio:1/1;background:var(--bg1);border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center;color:#a8456f;font-weight:700;font-size:1rem;line-height:1.8}.pimg img{width:100%;height:100%;object-fit:cover}.cap{font-family:'Pacifico',cursive;color:#5a2342;padding:10px 0 4px;font-size:1.1rem}
@@ -271,6 +306,20 @@ function basicMarkdownFallback(source){
  return blocks.join('');
 }
 function renderMarkdown(source){
+ if(window.marked && window.DOMPurify){
+  const parsed=window.marked.parse(source,{
+   gfm:true,
+   breaks:false,
+   pedantic:false,
+   headerIds:false,
+   mangle:false
+  });
+  return window.DOMPurify.sanitize(parsed,{
+   USE_PROFILES:{html:true},
+   ADD_ATTR:['target','rel','class','align','width','height','loading']
+  });
+ }
+ console.warn('Full Markdown parser unavailable; using the built-in basic Markdown fallback.');
  return basicMarkdownFallback(source);
 }
 function updateLetterScrollbar(){
