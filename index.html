@@ -115,47 +115,14 @@ canvas{position:fixed;inset:0;z-index:9;pointer-events:none}
 <script>
 // ✏️ Edit these to make it truly hers:
 const REASONS=["Your smile makes my whole day brighter ☀️","You make even boring moments feel fun 🎈","Your kindness is my favorite thing 🌷","You always know how to cheer me up 🫶","Being with you feels like home 🏡","You’re my favorite person, always 💖"];
-const LETTER=`Happy Birthday, My Love ❤️
-
-To my favourite person, my sweetest Slothhhh.
-
-November 6 — a day that became special to me because it’s the day someone as beautiful as you came into this world. 🥹❤️
-
-If I could make one wish today, it would be to be right there beside you. To see your smile, hold your hands, hug you a little tighter than usual, and remind you how incredibly special you are to me.
-
-I wish I could celebrate this day with you, make you feel like the princess you are, and fill your day with little surprises and endless love. But even though distance keeps us apart today, please remember that my heart is celebrating right beside yours.
-
-A little promise for a future birthday…
-
-One day, I won’t have to wish you through a screen. I’ll be right beside you, waking you up with birthday kisses, teasing you, making you smile, taking countless pictures, cutting your birthday cake together, and creating memories that we’ll cherish forever.
-
-I’m genuinely waiting for that day, my love. And when we finally meet, we’re going to celebrate your birthday properly — even if it’s a little late. You deserve all the happiness in the world. 🥺💗
-
-My birthday wishes for you
-
-May this new chapter bring you happiness that never fades, success in everything you pursue, good health, peaceful days, beautiful surprises, and countless reasons to smile.
-
-May you achieve every dream you’ve ever whispered to yourself. May life be gentle with you, and may you always remember how loved, precious, and special you are.
-
-And whenever life gets difficult, I hope you never forget that you have someone who will always cheer for you, believe in you, listen to you, and stand beside you.
-
-One last thing, my Slothhhh…
-
-Thank you for being part of my life. Thank you for being my favourite notification, my sweetest distraction, my comfort person, and the reason behind so many of my smiles.
-
-I don’t know what the future holds in every little detail, but I know I want to keep making memories with you, celebrating your happiness, supporting your dreams, and choosing you through all the little moments of life.
-
-Today is your day, Bubuuuuu. Enjoy every second, smile a little extra, eat lots of cake, and never forget how much you mean to me.
-
-Happy Birthday, My Slothhhh. My Wifeyyyy. My Bubuuuuu. 🎂❤️
-
-With all my love,
-Your Bubuuuuu, forever and always.
-
-I lommmmmmmuuuuuuuu youuuuuuuuu onekkkkkkkkk. ❤️💋♾️`;
-
-// 📷 Photos: put each image as a data URI in src (or ask Claude to embed them). Empty = Add photo button.
-const PHOTOS=[{src:"",cap:"The day we met 💕"},{src:"",cap:"Our silly moment 😜"},{src:"",cap:"My favourite smile 🥹"},{src:"",cap:"Can’t wait to see you 💋"}];
+// 📷 Add images to a folder named "photos" beside index.html.
+// Then set src to a relative path, e.g. "photos/first-date.jpg".
+const PHOTOS=[
+ {src:"",cap:"The day we met 💕"}, // e.g. src:"photos/first-date.jpg"
+ {src:"",cap:"Our silly moment 😜"},
+ {src:"",cap:"My favourite smile 🥹"},
+ {src:"",cap:"Can’t wait to see you 💋"}
+];
 
 const $=s=>document.querySelector(s);
 let ord=PHOTOS.map((_,i)=>i),love=0,tgt=0;const stack=$('#stack'),cards=[];
@@ -193,9 +160,28 @@ $('#nx').onclick=()=>show(cur+1);$('#bk').onclick=()=>show(cur-1);
 
 name='Mrs. Sloth 🦥💖💋';
 $('#hb').textContent='Happy Birthday, '+name+'!';
-$('#lt').dataset.t=LETTER.replace('{name}',name);
-// Local use: if letter.md sits next to this file, its text replaces the built-in letter.
-fetch('letter.md',{cache:'no-store'}).then(r=>{if(!r.ok)throw 0;return r.text()}).then(t=>{t=t.replace(/\r/g,'').replace(/^#{1,6}\s*/gm,'').replace(/(\*\*|__)/g,'').replace('{name}',name).trim();if(t)$('#lt').dataset.t=t}).catch(()=>{});
+// letter.md is the single source of truth. Poll it so edits appear without
+// refreshing the page; if the letter is already open, update it immediately.
+let latestLetter='';
+$('#lt').dataset.t='Loading your letter…';
+async function loadLetter(){
+ try{
+  const response=await fetch('letter.md?v='+Date.now(),{cache:'no-store'});
+  if(!response.ok)throw new Error('Could not load letter.md ('+response.status+')');
+  const text=(await response.text()).replace(/\r/g,'').replace('{name}',name).trim();
+  if(!text||text===latestLetter)return;
+  latestLetter=text;
+  $('#lt').dataset.t=text;
+  if($('#lt').style.display!=='none'){
+   $('#lt').textContent=text;
+   $('#lt').scrollTop=0;
+  }
+ }catch(error){
+  console.warn('Love letter refresh failed. Make sure letter.md is served beside index.html.',error);
+ }
+}
+loadLetter();
+setInterval(loadLetter,1500);
 $('#gift').onclick=()=>{$('#gift').classList.add('pop');confetti();hearts(14);setTimeout(()=>show(1),650)};
 
 // candles
