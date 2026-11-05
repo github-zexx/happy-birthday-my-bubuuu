@@ -45,6 +45,42 @@ nav.hide{display:none}
 /* letter */
 .env{font-size:6rem;cursor:pointer;animation:bob 2s infinite}
 .letter{background:var(--card);border:2px dashed var(--soft);border-radius:22px;padding:22px;max-width:380px;text-align:left;font-size:1.02rem;line-height:1.7;min-height:200px;max-height:60vh;overflow-y:auto;white-space:pre-wrap}
+.letter{
+ scrollbar-width:thin;
+ scrollbar-color:var(--pink) rgba(255,255,255,.12);
+ scrollbar-gutter:stable;
+}
+.letter::-webkit-scrollbar{width:10px}
+.letter::-webkit-scrollbar-track{
+ background:rgba(255,255,255,.12);
+ border-radius:999px;
+ margin:10px 3px;
+}
+.letter::-webkit-scrollbar-thumb{
+ background:linear-gradient(180deg,var(--pink),var(--soft));
+ border:2px solid transparent;
+ background-clip:padding-box;
+ border-radius:999px;
+}
+.letter::-webkit-scrollbar-thumb:hover{
+ background:var(--gold);
+ border:2px solid transparent;
+ background-clip:padding-box;
+}
+.letter h1,.letter h2,.letter h3{
+ color:var(--pink);margin:.7em 0 .35em;line-height:1.3;
+}
+.letter p{max-width:none;margin:.65em 0}
+.letter strong{color:var(--pink);font-weight:700}
+.letter em{color:var(--gold)}
+.letter ul,.letter ol{padding-left:1.35em;margin:.5em 0}
+.letter li{padding-left:.2em;margin:.25em 0}
+.letter blockquote{
+ border-left:3px solid var(--pink);margin:.8em 0;padding:.2em 0 .2em 1em;
+ opacity:.9;
+}
+.letter hr{border:0;border-top:1px solid var(--soft);margin:1em 0}
+
 #star{font-size:5.5rem;background:none;border:0;cursor:pointer;animation:bob 1.8s infinite;filter:drop-shadow(0 0 18px var(--gold))}
 .pol{background:#fff;padding:12px 12px 8px;border-radius:8px;box-shadow:0 12px 30px #0003;transform:rotate(-3deg);width:min(300px,78vw);cursor:pointer;margin:14px 0}.pimg{aspect-ratio:1/1;background:var(--bg1);border-radius:4px;overflow:hidden;display:flex;align-items:center;justify-content:center;text-align:center;color:#a8456f;font-weight:700;font-size:1rem;line-height:1.8}.pimg img{width:100%;height:100%;object-fit:cover}.cap{font-family:'Pacifico',cursive;color:#5a2342;padding:10px 0 4px;font-size:1.1rem}
 .gift{font-size:7rem;cursor:pointer;margin:10px 0;animation:wob 1.4s infinite}@keyframes wob{0%,100%{transform:rotate(0)}20%{transform:rotate(-8deg)}40%{transform:rotate(8deg)}60%{transform:rotate(-5deg)}80%{transform:rotate(5deg)}}.gift.pop{animation:none;transition:.6s;transform:scale(2.6);opacity:0}
@@ -115,8 +151,8 @@ canvas{position:fixed;inset:0;z-index:9;pointer-events:none}
 <script>
 // ✏️ Edit these to make it truly hers:
 const REASONS=["Your smile makes my whole day brighter ☀️","You make even boring moments feel fun 🎈","Your kindness is my favorite thing 🌷","You always know how to cheer me up 🫶","Being with you feels like home 🏡","You’re my favorite person, always 💖"];
-// 📷 Add images to a folder named "photos" beside index.html.
-// Then set src to a relative path, e.g. "photos/first-date.jpg".
+// 📷 These match the names shown in your photos folder.
+// The loader below also tries common extensions (.jpg, .jpeg, .png, .webp, .gif).
 const PHOTOS=[
  {src:"photos/silly-moment.jpg",cap:"Our silly moment 😜"},
  {src:"photos/favourite-smile.jpg",cap:"My favourite smile 🥹"},
@@ -128,8 +164,28 @@ const $=s=>document.querySelector(s);
 let ord=PHOTOS.map((_,i)=>i),love=0,tgt=0;const stack=$('#stack'),cards=[];
 function paint(i){
  const b=cards[i].querySelector('.pimg'),m=PHOTOS[i];
- if(m.src){b.innerHTML='';const im=new Image();im.src=m.src;im.alt='Memory '+(i+1);b.appendChild(im)}
- else{b.innerHTML=`<div>📷<br>Memory ${i+1}<br><button class="btn add">Add photo</button></div>`;b.querySelector('.add').onclick=e=>{e.stopPropagation();tgt=i;$('#pin').click()}}
+ b.innerHTML='';
+ if(m.src){
+  const im=new Image();
+  im.alt='Memory '+(i+1);
+  im.onload=()=>{b.innerHTML='';b.appendChild(im)};
+  im.onerror=()=>{
+   const extensions=['.jpg','.jpeg','.png','.webp','.gif'];
+   const base=m.src;
+   const next=extensions.find(ext=>!im.dataset.tried?.split('|').includes(ext));
+   if(next){
+    im.dataset.tried=(im.dataset.tried||'')+'|'+next;
+    im.src=base+next;
+   }else{
+    console.warn('Could not load photo:',base,'Check its exact name and extension.');
+    b.innerHTML=`<div>🖼️<br>Photo not found<br><small>${base} (+ .jpg/.jpeg/.png/.webp)</small></div>`;
+   }
+  };
+  im.src=m.src;
+ }else{
+  b.innerHTML=`<div>📷<br>Memory ${i+1}<br><button class="btn add">Add photo</button></div>`;
+  b.querySelector('.add').onclick=e=>{e.stopPropagation();tgt=i;$('#pin').click()};
+ }
 }
 function lay(){
  const R=[-2,4,-5,3];
@@ -162,6 +218,39 @@ name='Mrs. Sloth 🦥💖💋';
 $('#hb').textContent='Happy Birthday, '+name+'!';
 // letter.md is the single source of truth. Poll it so edits appear without
 // refreshing the page; if the letter is already open, update it immediately.
+// Small built-in Markdown renderer (no external library required).
+function escapeHTML(value){
+ return value.replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function inlineMarkdown(value){
+ let s=escapeHTML(value);
+ s=s.replace(/`([^`]+)`/g,'<code>$1</code>');
+ s=s.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/__(.+?)__/g,'<strong>$1</strong>');
+ s=s.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g,'<em>$1</em>').replace(/_([^_]+)_/g,'<em>$1</em>');
+ s=s.replace(/~~(.+?)~~/g,'<del>$1</del>');
+ return s;
+}
+function markdownToHTML(markdown){
+ const lines=markdown.replace(/\r/g,'').split('\n');
+ const blocks=[];let paragraph=[],listType='',listItems=[],quote=[];
+ const flushParagraph=()=>{if(paragraph.length){blocks.push('<p>'+paragraph.map(inlineMarkdown).join('<br>')+'</p>');paragraph=[];}};
+ const flushList=()=>{if(listItems.length){blocks.push('<'+listType+'>'+listItems.map(x=>'<li>'+inlineMarkdown(x)+'</li>').join('')+'</'+listType+'>');listItems=[];listType='';}};
+ const flushQuote=()=>{if(quote.length){blocks.push('<blockquote><p>'+quote.map(inlineMarkdown).join('<br>')+'</p></blockquote>');quote=[];}};
+ for(const line of lines){
+  const trimmed=line.trim();
+  if(!trimmed){flushParagraph();flushList();flushQuote();continue;}
+  const heading=trimmed.match(/^(#{1,3})\s+(.+)$/);
+  const bullet=trimmed.match(/^[-*+]\s+(.+)$/);
+  const numbered=trimmed.match(/^\d+[.)]\s+(.+)$/);
+  if(heading){flushParagraph();flushList();flushQuote();const level=heading[1].length;blocks.push('<h'+level+'>'+inlineMarkdown(heading[2])+'</h'+level+'>');}
+  else if(/^---+$/.test(trimmed)){flushParagraph();flushList();flushQuote();blocks.push('<hr>');}
+  else if(bullet||numbered){flushParagraph();flushQuote();const type=bullet?'ul':'ol';if(listType&&listType!==type)flushList();listType=type;listItems.push((bullet||numbered)[1]);}
+  else if(trimmed.startsWith('>')){flushParagraph();flushList();quote.push(trimmed.replace(/^>\s?/,''));}
+  else{flushList();flushQuote();paragraph.push(line);}
+ }
+ flushParagraph();flushList();flushQuote();
+ return blocks.join('');
+}
 let latestLetter='';
 $('#lt').dataset.t='Loading your letter…';
 async function loadLetter(){
@@ -173,7 +262,7 @@ async function loadLetter(){
   latestLetter=text;
   $('#lt').dataset.t=text;
   if($('#lt').style.display!=='none'){
-   $('#lt').textContent=text;
+   $('#lt').innerHTML=markdownToHTML(text);
    $('#lt').scrollTop=0;
   }
  }catch(error){
@@ -211,7 +300,7 @@ $('#env').onclick=()=>{
  $('#env').style.display='none';$('#eh').style.display='none';
  const L=$('#lt');L.style.display='block';L.textContent='';
  const t=Array.from(L.dataset.t);let i=0;
- const fin=()=>{clearInterval(iv);L.textContent=t.join('');L.scrollTop=L.scrollHeight;hearts(10)};
+ const fin=()=>{clearInterval(iv);L.innerHTML=markdownToHTML(L.dataset.t||t.join(''));L.scrollTop=L.scrollHeight;hearts(10)};
  L.onclick=()=>{if(i<t.length){i=t.length;fin()}};
  const iv=setInterval(()=>{L.textContent+=t[i++];L.scrollTop=L.scrollHeight;if(i>=t.length)fin()},9);
 };
